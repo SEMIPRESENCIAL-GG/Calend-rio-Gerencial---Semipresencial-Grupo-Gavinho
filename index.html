@@ -31,6 +31,22 @@ label{display:grid;gap:5px}
 .tip{position:fixed;z-index:9999;pointer-events:none;background:#12365c;color:white;padding:12px;border-radius:8px;box-shadow:0 5px 20px #0003;max-width:min(340px,calc(100vw - 24px));white-space:pre-line;line-height:1.5;font-size:13px}
 .quick-link{display:inline-flex;align-items:center;gap:8px;background:#164d80;color:white;text-decoration:none;padding:11px 16px;border-radius:7px;font-weight:600}
 .quick-link:hover{background:#12365c}
+
+/* Próximos prazos */
+.upcoming-panel{background:#111c30;color:#f8fafc;border:1px solid #26364f;border-radius:12px;padding:20px;margin-bottom:15px}
+.upcoming-panel h2{margin:0 0 16px;padding-bottom:16px;border-bottom:1px solid #2b3a52}
+.upcoming-list{display:grid;gap:12px;max-height:320px;overflow-y:auto;padding-right:5px}
+.upcoming-item{background:#172235;border:1px solid #2b3a52;border-radius:10px;padding:14px 16px}
+.upcoming-top,.upcoming-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.upcoming-name{font-weight:650}
+.upcoming-module{font-size:12px;color:#a9c8f5;white-space:nowrap}
+.upcoming-count{color:#60a5fa;font-weight:600;margin-top:10px}
+.upcoming-date{color:#b9c8dd;margin-top:8px}
+@media(max-width:600px){
+.upcoming-panel{padding:14px}
+.upcoming-item{padding:12px}
+.upcoming-top,.upcoming-bottom{align-items:flex-start}
+}
 </style>
 
 <header>
@@ -97,6 +113,12 @@ label{display:grid;gap:5px}
 
 <h3 id="stats"></h3>
 <div id="legend" class="row"></div>
+</section>
+
+<!-- ÁREA PÚBLICA: PRÓXIMOS PRAZOS -->
+<section id="upcoming" class="upcoming-panel">
+<h2>◷ Próximos prazos</h2>
+<div id="upcoming-list" class="upcoming-list"></div>
 </section>
 
 <div class="months" id="months"></div>
@@ -166,8 +188,9 @@ Selecione um dia para consultar atividades.
 </form>
 </section>
 
-<section>
-<h2>Plano de ação</h2>
+<!-- ÁREA PRIVADA: SOMENTE ADMINISTRADOR -->
+<section id="registered-events" hidden>
+<h2>Eventos cadastrados</h2>
 <div id="list"></div>
 </section>
 
@@ -262,6 +285,7 @@ events=[];
 admin=false;
 editing=null;
 $('editor').hidden=true;
+$('registered-events').hidden=true;
 $('login').hidden=true;
 $('app').hidden=false;
 $('openLogin').hidden=!!s;
@@ -279,6 +303,7 @@ let {data,error}=await db.from('administradores')
 admin=!!data&&!error;
 $('role').textContent=admin?'Administrador':'Consulta';
 $('editor').hidden=!admin;
+$('registered-events').hidden=!admin;
 if(error)msg(error.message);
 }
 await load();
@@ -328,10 +353,46 @@ e.presencialidade===$('filterpres').value))&&
 );
 }
 
+function localToday(){
+let d=new Date();
+return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderUpcoming(items){
+let today=localToday();
+
+let upcoming=items
+.filter(e=>e.data_fim>=today)
+.sort((a,b)=>a.data_inicio.localeCompare(b.data_inicio));
+
+$('upcoming-list').innerHTML=upcoming.length?upcoming.map(e=>{
+let start=new Date(e.data_inicio+'T00:00:00');
+let now=new Date(today+'T00:00:00');
+let days=Math.round((start-now)/86400000);
+
+let status=days>0?`Começa em ${days} ${days===1?'dia':'dias'}`:
+(days===0?'Começa hoje':'Em andamento');
+
+return `<article class="upcoming-item">
+<div class="upcoming-top">
+<span class="upcoming-name"><i class="dot" style="background:${color(e)}"></i>${esc(e.titulo||e.categoria)}</span>
+<span class="upcoming-module">${esc(e.modulo||'Módulo não informado')}</span>
+</div>
+<div class="upcoming-bottom">
+<span class="upcoming-count">${status}</span>
+<span class="upcoming-date">Início em ${fmt(e.data_inicio)}</span>
+</div>
+</article>`;
+}).join(''):'<p class="muted">Não há próximos prazos cadastrados.</p>';
+}
+
 function render(){
 $("daytip").hidden=true;
 let es=filtered();
+
 $('stats').textContent=`${es.length} ${es.length===1?'atividade':'atividades'}`;
+
+renderUpcoming(es);
 
 $('months').innerHTML=Array.from({length:12},(_,m)=>{
 let h=`<div class="month"><h3>${new Date(2027,m,1).toLocaleDateString('pt-BR',{month:'long'})}</h3><div class="days">${['D','S','T','Q','Q','S','S'].map(x=>`<small>${x}</small>`).join('')}`;
