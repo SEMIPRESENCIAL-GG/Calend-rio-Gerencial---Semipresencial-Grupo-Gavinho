@@ -23,6 +23,16 @@ label{display:grid;gap:5px}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin:1px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .event{border-bottom:1px solid #ddd;padding:12px 0}
+.upcoming-panel{background:#111c30;color:#f8fafc;border:1px solid #26364f;border-radius:12px;padding:14px;margin:15px 0}
+.upcoming-panel h2{font-size:17px;margin:0 0 10px;padding-bottom:10px;border-bottom:1px solid #2b3a52}
+.upcoming-list{display:grid;gap:8px;max-height:190px;overflow-y:auto;padding-right:5px}
+.upcoming-item{background:#172235;border:1px solid #2b3a52;border-radius:8px;padding:9px 12px}
+.upcoming-top,.upcoming-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.upcoming-name{font-weight:650}
+.upcoming-module{font-size:12px;color:#a9c8f5;white-space:nowrap}
+.upcoming-count{color:#60a5fa;font-weight:600;margin-top:6px;font-size:13px}
+.upcoming-date{color:#b9c8dd;margin-top:5px;font-size:13px}
+@media(max-width:600px){.upcoming-panel{padding:14px}.upcoming-item{padding:12px}.upcoming-top,.upcoming-bottom{align-items:flex-start}}
 .muted{color:#64748b}
 #msg{white-space:pre-wrap;color:#a33}
 [hidden]{display:none!important}
@@ -31,22 +41,6 @@ label{display:grid;gap:5px}
 .tip{position:fixed;z-index:9999;pointer-events:none;background:#12365c;color:white;padding:12px;border-radius:8px;box-shadow:0 5px 20px #0003;max-width:min(340px,calc(100vw - 24px));white-space:pre-line;line-height:1.5;font-size:13px}
 .quick-link{display:inline-flex;align-items:center;gap:8px;background:#164d80;color:white;text-decoration:none;padding:11px 16px;border-radius:7px;font-weight:600}
 .quick-link:hover{background:#12365c}
-
-/* Próximos prazos */
-.upcoming-panel{background:#111c30;color:#f8fafc;border:1px solid #26364f;border-radius:12px;padding:20px;margin-bottom:15px}
-.upcoming-panel h2{margin:0 0 16px;padding-bottom:16px;border-bottom:1px solid #2b3a52}
-.upcoming-list{display:grid;gap:12px;max-height:320px;overflow-y:auto;padding-right:5px}
-.upcoming-item{background:#172235;border:1px solid #2b3a52;border-radius:10px;padding:14px 16px}
-.upcoming-top,.upcoming-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.upcoming-name{font-weight:650}
-.upcoming-module{font-size:12px;color:#a9c8f5;white-space:nowrap}
-.upcoming-count{color:#60a5fa;font-weight:600;margin-top:10px}
-.upcoming-date{color:#b9c8dd;margin-top:8px}
-@media(max-width:600px){
-.upcoming-panel{padding:14px}
-.upcoming-item{padding:12px}
-.upcoming-top,.upcoming-bottom{align-items:flex-start}
-}
 </style>
 
 <header>
@@ -115,16 +109,15 @@ label{display:grid;gap:5px}
 <div id="legend" class="row"></div>
 </section>
 
-<!-- ÁREA PÚBLICA: PRÓXIMOS PRAZOS -->
-<section id="upcoming" class="upcoming-panel">
-<h2>◷ Próximos prazos</h2>
-<div id="upcoming-list" class="upcoming-list"></div>
+<section id="dayinfo">
+Selecione um dia para consultar atividades.
 </section>
 
 <div class="months" id="months"></div>
 
-<section id="dayinfo">
-Selecione um dia para consultar atividades.
+<section id="upcoming" class="upcoming-panel">
+<h2>◷ Próximos prazos</h2>
+<div id="upcoming-list" class="upcoming-list"></div>
 </section>
 
 <section id="editor" hidden>
@@ -188,7 +181,6 @@ Selecione um dia para consultar atividades.
 </form>
 </section>
 
-<!-- ÁREA PRIVADA: SOMENTE ADMINISTRADOR -->
 <section id="registered-events" hidden>
 <h2>Eventos cadastrados</h2>
 <div id="list"></div>
