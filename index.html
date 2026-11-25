@@ -205,7 +205,8 @@ const cats=[
 'Estágio Grupo 2',
 'Período de práticas',
 'Semana de reposição',
-'Outras atividades'
+'Outras atividades',
+'Período do módulo'
 ];
 
 const colors=[
@@ -219,7 +220,8 @@ const colors=[
 '#0891b2',
 '#7c3aed',
 '#be123c',
-'#64748b'
+'#64748b',
+'#0f766e'
 ];
 
 const fields=[
@@ -233,7 +235,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({
 '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[c]));
 
-const color=e=>colors[cats.indexOf(e.categoria)]||colors[10];
+const color=e=>colors[cats.indexOf(e.categoria)]||colors[11];
 const fmt=d=>d.split('-').reverse().join('/');
 const msg=t=>$('msg').textContent=t||'';
 
