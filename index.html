@@ -115,7 +115,7 @@ Selecione um dia para consultar atividades.
 </label>
 
 <label>Presencialidade
-<select id="presencialidade" >
+<select id="presencialidade">
 <option value="">Selecione</option>
 <option>Prática em laboratório</option>
 <option>Estágio</option>
@@ -171,7 +171,6 @@ Selecione um dia para consultar atividades.
 <div id="list"></div>
 </section>
 
-<!-- ACESSO RÁPIDO NO FINAL DA PÁGINA -->
 <section id="quick-access">
 <h2>Acessos rápidos</h2>
 <p class="muted">Links úteis para a gestão operacional.</p>
@@ -198,25 +197,29 @@ const $=id=>document.getElementById(id);
 const cats=[
 'Identificação de alunos',
 'Alocação de alunos',
-'Reunião com alunos',
+'Reunião com os alunos',
 'Contratação de preceptor',
-'Envio de TCE',
-'Envio de ficha de frequência',
-'Início de estágio',
-'Outra atividade',
-'Início do estágio (Grupo 1)',
-'Fim do estágio (Grupo 1)',
-'Início do estágio (Grupo 2)',
-'Fim do estágio (Grupo 2)',
-'Início das práticas',
-'Semana de reposição'
+'Envio do TCE',
+'Envio da Ficha de Frequência e Avaliação',
+'Estágio Grupo 1',
+'Estágio Grupo 2',
+'Período de práticas',
+'Semana de reposição',
+'Outras atividades'
 ];
 
 const colors=[
-'#2563eb','#0d9488','#9333ea','#ea580c',
-'#ca8a04','#db2777','#16a34a','#64748b',
-'#15803d','#dc2626','#84cc16','#991b1b',
-'#0891b2','#a16207'
+'#2563eb',
+'#0d9488',
+'#9333ea',
+'#ea580c',
+'#ca8a04',
+'#db2777',
+'#16a34a',
+'#0891b2',
+'#7c3aed',
+'#be123c',
+'#64748b'
 ];
 
 const fields=[
@@ -230,7 +233,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({
 '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[c]));
 
-const color=e=>colors[cats.indexOf(e.categoria)]||colors[7];
+const color=e=>colors[cats.indexOf(e.categoria)]||colors[10];
 const fmt=d=>d.split('-').reverse().join('/');
 const msg=t=>$('msg').textContent=t||'';
 
@@ -474,4 +477,3 @@ if(error)msg(error.message);
 await session(data.session);
 </script>
 </html>
-
