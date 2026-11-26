@@ -20,6 +20,8 @@ label{display:grid;gap:5px}
 .months{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px}
 .days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
 .day{min-height:38px;padding:4px;background:#f1f5f9;border:0}
+.day.holiday-day{background:#000!important;color:#fff!important;font-weight:700;border-radius:5px}
+.holiday-day .dot{border:1px solid #fff}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin:1px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .event{border-bottom:1px solid #ddd;padding:12px 0}
@@ -97,6 +99,14 @@ label{display:grid;gap:5px}
 <option>Prática em laboratório</option>
 <option>Estágio</option>
 <option value="__none">Não informada</option>
+</select>
+</label>
+
+<label>Feriado
+<select id="filterholiday">
+<option value="">Todos</option>
+<option value="yes">Somente feriados</option>
+<option value="no">Excluir feriados</option>
 </select>
 </label>
 
@@ -224,7 +234,8 @@ const cats=[
 'Período do módulo',
 'Realizar orçamento de insumos',
 'Comprar insumos',
-'Realizar comunicado'
+'Realizar comunicado',
+'Feriado'
 ];
 
 const colors=[
@@ -242,7 +253,8 @@ const colors=[
 '#0f766e',
 '#c2410c',
 '#15803d',
-'#0369a1'
+'#0369a1',
+'#000000'
 ];
 
 const fields=[
@@ -257,6 +269,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({
 }[c]));
 
 const color=e=>colors[cats.indexOf(e.categoria)]||colors[14];
+const isHoliday=e=>e.categoria==='Feriado';
 const fmt=d=>d.split('-').reverse().join('/');
 const msg=t=>$('msg').textContent=t||'';
 
@@ -340,6 +353,7 @@ $('reload').onclick=load;
 
 function filtered(){
 let q=$('search').value.toLowerCase();
+let holidayFilter=$('filterholiday').value;
 
 return events.filter(e=>
 (!$('filtermod').value||e.modulo===$('filtermod').value)&&
@@ -347,6 +361,8 @@ return events.filter(e=>
 (!$('filterpres').value||
 ($('filterpres').value==='__none'?!e.presencialidade:
 e.presencialidade===$('filterpres').value))&&
+(!holidayFilter||
+(holidayFilter==='yes'?isHoliday(e):!isHoliday(e)))&&
 (!q||`${e.curso||''} ${e.polo||''}`.toLowerCase().includes(q))
 );
 }
@@ -395,15 +411,19 @@ h+='<span></span>'.repeat(new Date(2027,m,1).getDay());
 for(let d=1;d<=new Date(2027,m+1,0).getDate();d++){
 let date=`2027-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 let a=es.filter(e=>e.data_inicio<=date&&e.data_fim>=date);
+let holiday=a.some(isHoliday);
 
-h+=`<button class="day" data-date="${date}" aria-label="${esc(fmt(date)+': '+(a.map(e=>e.titulo).join('; ')||'Nenhuma atividade programada'))}" style="${a.length?'background:'+color(a[0])+'22':''}">${d}<div>${[...new Set(a.map(color))].map(c=>`<i class="dot" style="background:${c}"></i>`).join('')}</div></button>`;
+let dayClass=holiday?'day holiday-day':'day';
+let dayStyle=holiday?'background:#000;color:#fff':(a.length?'background:'+color(a[0])+'22':'');
+
+h+=`<button class="${dayClass}" data-date="${date}" aria-label="${esc(fmt(date)+': '+(a.map(e=>e.titulo||e.categoria).join('; ')||'Nenhuma atividade programada'))}" style="${dayStyle}">${d}<div>${[...new Set(a.map(color))].map(c=>`<i class="dot" style="background:${holiday?'#fff':c}"></i>`).join('')}</div></button>`;
 }
 return h+'</div></div>';
 }).join('');
 
 $('list').innerHTML=es.map(e=>`
 <div class="event">
-<strong><i class="dot" style="background:${color(e)}"></i>${esc(e.titulo)}</strong>
+<strong><i class="dot" style="background:${color(e)}"></i>${esc(e.titulo||e.categoria)}</strong>
 <p>${fmt(e.data_inicio)} a ${fmt(e.data_fim)} • ${esc(e.modulo)} • ${esc(e.regiao)} • ${esc(e.presencialidade||'Presencialidade não informada')}</p>
 <p class="muted">${esc(e.curso)} ${esc(e.polo)} ${admin?esc(e.responsavel)+' '+esc(e.observacoes):''}</p>
 ${admin?`<button data-edit="${esc(e.id)}">Editar</button> <button data-del="${esc(e.id)}">Excluir</button>`:''}
@@ -413,7 +433,7 @@ ${admin?`<button data-edit="${esc(e.id)}">Editar</button> <button data-del="${es
 if(selected){
 $('dayinfo').innerHTML='<strong>'+fmt(selected)+'</strong><p>'+
 (es.filter(e=>e.data_inicio<=selected&&e.data_fim>=selected)
-.map(e=>esc(e.titulo)).join(' • ')||'Nenhuma atividade')+'</p>';
+.map(e=>esc(e.titulo||e.categoria)).join(' • ')||'Nenhuma atividade')+'</p>';
 }
 }
 
@@ -425,7 +445,7 @@ let date=b.dataset.date;
 let a=filtered().filter(e=>e.data_inicio<=date&&e.data_fim>=date);
 
 tip.textContent=fmt(date)+'\n'+(a.length?
-a.map(e=>'• '+e.titulo+
+a.map(e=>'• '+(e.titulo||e.categoria)+
 (e.modulo?' | '+e.modulo:'')+
 (e.curso?' | '+e.curso:'')+
 (e.presencialidade?' | '+e.presencialidade:'')+
@@ -471,7 +491,7 @@ render();
 showTip($('months').querySelector('[data-date="'+d+'"]'));
 };
 
-['filtermod','filterreg','filterpres','search'].forEach(k=>$(k).oninput=render);
+['filtermod','filterreg','filterpres','filterholiday','search'].forEach(k=>$(k).oninput=render);
 
 function clear(){
 editing=null;
