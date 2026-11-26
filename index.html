@@ -282,6 +282,19 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({
 "'":'&#39;'
 }[c]));
 
+/* CONVERSÃO AUTOMÁTICA DOS MÓDULOS ANTIGOS */
+function normalizeModule(module){
+const mapping={
+'51/2027':'51-91',
+'52/2027':'52-92',
+'53/2027':'53-93',
+'54/2027':'54-94'
+};
+
+const value=String(module??'').trim();
+return mapping[value]||value;
+}
+
 const color=e=>colors[cats.indexOf(e.categoria)]||colors[14];
 const isHoliday=e=>e.categoria==='Feriado';
 const fmt=d=>d.split('-').reverse().join('/');
@@ -306,7 +319,12 @@ msg(error.message);
 return;
 }
 
-events=data;
+/* Normaliza os módulos antes de exibir os registros */
+events=(data||[]).map(e=>({
+...e,
+modulo:normalizeModule(e.modulo)
+}));
+
 render();
 }
 
@@ -386,7 +404,7 @@ let q=$('search').value.toLowerCase();
 
 return events.filter(e=>
 !isHoliday(e)&&
-(!$('filtermod').value||e.modulo===$('filtermod').value)&&
+(!$('filtermod').value||normalizeModule(e.modulo)===$('filtermod').value)&&
 (!$('filterreg').value||
 e.regiao===$('filterreg').value||
 e.regiao==='RJ e SP')&&
@@ -450,7 +468,7 @@ return `<article class="upcoming-item">
 ${esc(e.titulo||e.categoria)}
 </span>
 <span class="upcoming-module">
-${esc(e.modulo||'Módulo não informado')}
+${esc(normalizeModule(e.modulo)||'Módulo não informado')}
 </span>
 </div>
 <div class="upcoming-bottom">
@@ -523,7 +541,7 @@ ${esc(e.titulo||e.categoria)}
 </strong>
 <p>
 ${fmt(e.data_inicio)} a ${fmt(e.data_fim)}
-• ${esc(e.modulo)}
+• ${esc(normalizeModule(e.modulo))}
 • ${esc(e.regiao)}
 • ${esc(e.presencialidade||'Presencialidade não informada')}
 </p>
@@ -561,7 +579,7 @@ e.data_inicio<=date&&e.data_fim>=date
 
 tip.textContent=fmt(date)+'\n'+(a.length
 ?a.map(e=>'• '+(e.titulo||e.categoria)+
-(e.modulo?' | '+e.modulo:'')+
+(e.modulo?' | '+normalizeModule(e.modulo):'')+
 (e.curso?' | '+e.curso:'')+
 (e.presencialidade?' | '+e.presencialidade:'')+
 '\n  '+fmt(e.data_inicio)+' a '+fmt(e.data_fim)
@@ -649,6 +667,9 @@ if(!admin)return;
 
 let o=Object.fromEntries(fields.map(k=>[k,$(k).value]));
 
+/* Garante que o módulo salvo utilize o novo padrão */
+o.modulo=normalizeModule(o.modulo);
+
 if(o.data_fim<o.data_inicio){
 msg('O término deve ser igual ou posterior ao início.');
 return;
@@ -681,7 +702,11 @@ let a=events.find(x=>x.id===id);
 
 editing=id;
 
-fields.forEach(k=>$(k).value=a[k]||'');
+fields.forEach(k=>{
+$(k).value=k==='modulo'
+?normalizeModule(a[k])
+:(a[k]||'');
+});
 
 $('formtitle').textContent='Editar atividade';
 $('editor').scrollIntoView({behavior:'smooth'});
