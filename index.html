@@ -34,7 +34,11 @@ label{display:grid;gap:5px}
 .upcoming-module{font-size:12px;color:#a9c8f5;white-space:nowrap}
 .upcoming-count{color:#60a5fa;font-weight:600;margin-top:6px;font-size:13px}
 .upcoming-date{color:#b9c8dd;margin-top:5px;font-size:13px}
-@media(max-width:600px){.upcoming-panel{padding:14px}.upcoming-item{padding:12px}.upcoming-top,.upcoming-bottom{align-items:flex-start}}
+@media(max-width:600px){
+.upcoming-panel{padding:14px}
+.upcoming-item{padding:12px}
+.upcoming-top,.upcoming-bottom{align-items:flex-start}
+}
 .muted{color:#64748b}
 #msg{white-space:pre-wrap;color:#a33}
 [hidden]{display:none!important}
@@ -75,6 +79,7 @@ label{display:grid;gap:5px}
 
 <section>
 <div class="fields">
+
 <label>Módulo
 <select id="filtermod">
 <option value="">Todos</option>
@@ -113,6 +118,7 @@ label{display:grid;gap:5px}
 <label>Curso ou polo
 <input id="search">
 </label>
+
 </div>
 
 <h3 id="stats"></h3>
@@ -215,7 +221,10 @@ Acessar UniConecta ↗
 <script type="module">
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const db=createClient('https://dgyvuatwoktyuitcnrkp.supabase.co','sb_publishable_gKxjPpx40p7VdVSKm2J2jA_QQiMeNgr');
+const db=createClient(
+'https://dgyvuatwoktyuitcnrkp.supabase.co',
+'sb_publishable_gKxjPpx40p7VdVSKm2J2jA_QQiMeNgr'
+);
 
 const $=id=>document.getElementById(id);
 
@@ -265,7 +274,11 @@ const fields=[
 let events=[],admin=false,editing=null,selected='';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({
-'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
 }[c]));
 
 const color=e=>colors[cats.indexOf(e.categoria)]||colors[14];
@@ -280,13 +293,18 @@ $('legend').innerHTML=cats.map((x,i)=>
 ).join('');
 
 async function load(){
-let {data,error}=await db.from(admin?'atividades':'calendario_publico')
+let {data,error}=await db
+.from(admin?'atividades':'calendario_publico')
 .select('*')
 .lte('data_inicio','2027-12-31')
 .gte('data_fim','2027-01-01')
 .order('data_inicio');
 
-if(error){msg(error.message);return}
+if(error){
+msg(error.message);
+return;
+}
+
 events=data;
 render();
 }
@@ -306,7 +324,8 @@ clear();
 render();
 
 if(s){
-let {data,error}=await db.from('administradores')
+let {data,error}=await db
+.from('administradores')
 .select('usuario_id')
 .eq('usuario_id',s.user.id)
 .maybeSingle();
@@ -315,8 +334,10 @@ admin=!!data&&!error;
 $('role').textContent=admin?'Administrador':'Consulta';
 $('editor').hidden=!admin;
 $('registered-events').hidden=!admin;
+
 if(error)msg(error.message);
 }
+
 await load();
 }
 
@@ -334,106 +355,192 @@ msg('');
 $('loginform').onsubmit=async e=>{
 e.preventDefault();
 msg('');
+
 let {data,error}=await db.auth.signInWithPassword({
 email:$('email').value,
 password:$('password').value
 });
+
 $('password').value='';
+
 if(error)msg(error.message);
 else await session(data.session);
 };
 
 $('logout').onclick=async()=>{
 let {error}=await db.auth.signOut();
+
 if(error)msg(error.message);
 else await session(null);
 };
 
 $('reload').onclick=load;
 
-function filtered(){
+/* FILTRO DAS ATIVIDADES:
+   Os feriados são tratados separadamente para não desaparecerem
+   quando os outros filtros forem utilizados. */
+
+function filteredActivities(){
 let q=$('search').value.toLowerCase();
-let holidayFilter=$('filterholiday').value;
 
 return events.filter(e=>
+!isHoliday(e)&&
 (!$('filtermod').value||e.modulo===$('filtermod').value)&&
-(!$('filterreg').value||e.regiao===$('filterreg').value||e.regiao==='RJ e SP')&&
+(!$('filterreg').value||
+e.regiao===$('filterreg').value||
+e.regiao==='RJ e SP')&&
 (!$('filterpres').value||
-($('filterpres').value==='__none'?!e.presencialidade:
-e.presencialidade===$('filterpres').value))&&
-(!holidayFilter||
-(holidayFilter==='yes'?isHoliday(e):!isHoliday(e)))&&
+($('filterpres').value==='__none'
+?!e.presencialidade
+:e.presencialidade===$('filterpres').value))&&
 (!q||`${e.curso||''} ${e.polo||''}`.toLowerCase().includes(q))
 );
 }
 
+/* FILTRO GERAL:
+   Todos = atividades filtradas + feriados.
+   Somente feriados = apenas feriados.
+   Excluir feriados = somente atividades filtradas. */
+
+function visibleEvents(){
+let atividades=filteredActivities();
+let holidayFilter=$('filterholiday').value;
+
+let feriados=events.filter(isHoliday);
+
+if(holidayFilter==='yes'){
+return feriados;
+}
+
+if(holidayFilter==='no'){
+return atividades;
+}
+
+return [...atividades,...feriados];
+}
+
 function localToday(){
 let d=new Date();
+
 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function renderUpcoming(items){
 let today=localToday();
+
 let upcoming=items
 .filter(e=>e.data_fim>=today)
 .sort((a,b)=>a.data_inicio.localeCompare(b.data_inicio));
 
-$('upcoming-list').innerHTML=upcoming.length?upcoming.map(e=>{
+$('upcoming-list').innerHTML=upcoming.length
+?upcoming.map(e=>{
 let start=new Date(e.data_inicio+'T00:00:00');
 let now=new Date(today+'T00:00:00');
 let days=Math.round((start-now)/86400000);
-let status=days>0?`Começa em ${days} ${days===1?'dia':'dias'}`:
-(days===0?'Começa hoje':'Em andamento');
+
+let status=days>0
+?`Começa em ${days} ${days===1?'dia':'dias'}`
+:(days===0?'Começa hoje':'Em andamento');
+
 return `<article class="upcoming-item">
 <div class="upcoming-top">
-<span class="upcoming-name"><i class="dot" style="background:${color(e)}"></i>${esc(e.titulo||e.categoria)}</span>
-<span class="upcoming-module">${esc(e.modulo||'Módulo não informado')}</span>
+<span class="upcoming-name">
+<i class="dot" style="background:${color(e)}"></i>
+${esc(e.titulo||e.categoria)}
+</span>
+<span class="upcoming-module">
+${esc(e.modulo||'Módulo não informado')}
+</span>
 </div>
 <div class="upcoming-bottom">
 <span class="upcoming-count">${status}</span>
 <span class="upcoming-date">Início em ${fmt(e.data_inicio)}</span>
 </div>
 </article>`;
-}).join(''):'<p class="muted">Não há próximos prazos cadastrados.</p>';
+}).join('')
+:'<p class="muted">Não há próximos prazos cadastrados.</p>';
 }
 
 function render(){
-$("daytip").hidden=true;
-let es=filtered();
+$('daytip').hidden=true;
+
+let es=visibleEvents();
+
 $('stats').textContent=`${es.length} ${es.length===1?'atividade':'atividades'}`;
+
 renderUpcoming(es);
 
 $('months').innerHTML=Array.from({length:12},(_,m)=>{
-let h=`<div class="month"><h3>${new Date(2027,m,1).toLocaleDateString('pt-BR',{month:'long'})}</h3><div class="days">${['D','S','T','Q','Q','S','S'].map(x=>`<small>${x}</small>`).join('')}`;
+
+let h=`<div class="month">
+<h3>${new Date(2027,m,1).toLocaleDateString('pt-BR',{month:'long'})}</h3>
+<div class="days">
+${['D','S','T','Q','Q','S','S'].map(x=>`<small>${x}</small>`).join('')}`;
 
 h+='<span></span>'.repeat(new Date(2027,m,1).getDay());
 
 for(let d=1;d<=new Date(2027,m+1,0).getDate();d++){
+
 let date=`2027-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-let a=es.filter(e=>e.data_inicio<=date&&e.data_fim>=date);
+
+let a=es.filter(e=>
+e.data_inicio<=date&&e.data_fim>=date
+);
+
 let holiday=a.some(isHoliday);
 
 let dayClass=holiday?'day holiday-day':'day';
-let dayStyle=holiday?'background:#000;color:#fff':(a.length?'background:'+color(a[0])+'22':'');
 
-h+=`<button class="${dayClass}" data-date="${date}" aria-label="${esc(fmt(date)+': '+(a.map(e=>e.titulo||e.categoria).join('; ')||'Nenhuma atividade programada'))}" style="${dayStyle}">${d}<div>${[...new Set(a.map(color))].map(c=>`<i class="dot" style="background:${holiday?'#fff':c}"></i>`).join('')}</div></button>`;
+let dayStyle=holiday
+?'background:#000;color:#fff'
+:(a.length?'background:'+color(a[0])+'22':'');
+
+h+=`<button
+class="${dayClass}"
+data-date="${date}"
+aria-label="${esc(fmt(date)+': '+(a.map(e=>e.titulo||e.categoria).join('; ')||'Nenhuma atividade programada'))}"
+style="${dayStyle}"
+>${d}<div>${
+[...new Set(a.map(color))]
+.map(c=>`<i class="dot" style="background:${holiday?'#fff':c}"></i>`)
+.join('')
+}</div></button>`;
 }
+
 return h+'</div></div>';
+
 }).join('');
 
 $('list').innerHTML=es.map(e=>`
 <div class="event">
-<strong><i class="dot" style="background:${color(e)}"></i>${esc(e.titulo||e.categoria)}</strong>
-<p>${fmt(e.data_inicio)} a ${fmt(e.data_fim)} • ${esc(e.modulo)} • ${esc(e.regiao)} • ${esc(e.presencialidade||'Presencialidade não informada')}</p>
-<p class="muted">${esc(e.curso)} ${esc(e.polo)} ${admin?esc(e.responsavel)+' '+esc(e.observacoes):''}</p>
-${admin?`<button data-edit="${esc(e.id)}">Editar</button> <button data-del="${esc(e.id)}">Excluir</button>`:''}
+<strong>
+<i class="dot" style="background:${color(e)}"></i>
+${esc(e.titulo||e.categoria)}
+</strong>
+<p>
+${fmt(e.data_inicio)} a ${fmt(e.data_fim)}
+• ${esc(e.modulo)}
+• ${esc(e.regiao)}
+• ${esc(e.presencialidade||'Presencialidade não informada')}
+</p>
+<p class="muted">
+${esc(e.curso)} ${esc(e.polo)}
+${admin?esc(e.responsavel)+' '+esc(e.observacoes):''}
+</p>
+${admin?`<button data-edit="${esc(e.id)}">Editar</button>
+<button data-del="${esc(e.id)}">Excluir</button>`:''}
 </div>
 `).join('')||'Nenhuma atividade cadastrada.';
 
 if(selected){
-$('dayinfo').innerHTML='<strong>'+fmt(selected)+'</strong><p>'+
-(es.filter(e=>e.data_inicio<=selected&&e.data_fim>=selected)
-.map(e=>esc(e.titulo||e.categoria)).join(' • ')||'Nenhuma atividade')+'</p>';
+let doDia=es.filter(e=>
+e.data_inicio<=selected&&e.data_fim>=selected
+);
+
+$('dayinfo').innerHTML=
+'<strong>'+fmt(selected)+'</strong><p>'+
+(doDia.map(e=>esc(e.titulo||e.categoria)).join(' • ')||'Nenhuma atividade')+
+'</p>';
 }
 }
 
@@ -441,37 +548,56 @@ const tip=$('daytip');
 
 function showTip(b){
 if(!b)return;
-let date=b.dataset.date;
-let a=filtered().filter(e=>e.data_inicio<=date&&e.data_fim>=date);
 
-tip.textContent=fmt(date)+'\n'+(a.length?
-a.map(e=>'• '+(e.titulo||e.categoria)+
+let date=b.dataset.date;
+
+let a=visibleEvents().filter(e=>
+e.data_inicio<=date&&e.data_fim>=date
+);
+
+tip.textContent=fmt(date)+'\n'+(a.length
+?a.map(e=>'• '+(e.titulo||e.categoria)+
 (e.modulo?' | '+e.modulo:'')+
 (e.curso?' | '+e.curso:'')+
 (e.presencialidade?' | '+e.presencialidade:'')+
 '\n  '+fmt(e.data_inicio)+' a '+fmt(e.data_fim)
-).join('\n'):'Nenhuma atividade programada');
+).join('\n')
+:'Nenhuma atividade programada');
 
 tip.hidden=false;
-let r=b.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;
+
+let r=b.getBoundingClientRect();
+let w=tip.offsetWidth;
+let h=tip.offsetHeight;
+
 tip.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';
-tip.style.top=Math.max(8,r.bottom+h+8<=innerHeight?r.bottom+6:r.top-h-6)+'px';
+tip.style.top=Math.max(8,r.bottom+h+8<=innerHeight
+?r.bottom+6
+:r.top-h-6)+'px';
 }
 
-function hideTip(){tip.hidden=true}
+function hideTip(){
+tip.hidden=true;
+}
 
 $('months').addEventListener('pointerover',e=>{
 let b=e.target.closest('[data-date]');
+
 if(b&&e.pointerType!=='touch')showTip(b);
 });
 
 $('months').addEventListener('pointerout',e=>{
 let b=e.target.closest('[data-date]');
+
 if(b&&!b.contains(e.relatedTarget))hideTip();
 });
 
-$('months').addEventListener('focusin',e=>showTip(e.target.closest('[data-date]')));
+$('months').addEventListener('focusin',e=>
+showTip(e.target.closest('[data-date]'))
+);
+
 $('months').addEventListener('focusout',hideTip);
+
 window.addEventListener('scroll',hideTip,true);
 window.addEventListener('resize',hideTip);
 
@@ -481,17 +607,28 @@ if(e.key==='Escape')hideTip();
 
 $('months').onclick=e=>{
 let d=e.target.closest('[data-date]')?.dataset.date;
+
 if(!d)return;
+
 selected=d;
+
 if(admin&&!editing){
 $('data_inicio').value=d;
 $('data_fim').value=d;
 }
+
 render();
+
 showTip($('months').querySelector('[data-date="'+d+'"]'));
 };
 
-['filtermod','filterreg','filterpres','filterholiday','search'].forEach(k=>$(k).oninput=render);
+[
+'filtermod',
+'filterreg',
+'filterpres',
+'filterholiday',
+'search'
+].forEach(k=>$(k).oninput=render);
 
 function clear(){
 editing=null;
@@ -503,6 +640,7 @@ $('clear').onclick=clear;
 
 $('eventform').onsubmit=async e=>{
 e.preventDefault();
+
 if(!admin)return;
 
 let o=Object.fromEntries(fields.map(k=>[k,$(k).value]));
@@ -515,12 +653,13 @@ return;
 o.titulo=o.titulo.trim()||o.categoria;
 o.cor=color(o);
 
-let {error}=editing?
-await db.from('atividades').update(o).eq('id',editing):
-await db.from('atividades').insert(o);
+let {error}=editing
+?await db.from('atividades').update(o).eq('id',editing)
+:await db.from('atividades').insert(o);
 
-if(error)msg(error.message);
-else{
+if(error){
+msg(error.message);
+}else{
 msg('');
 clear();
 await load();
@@ -535,21 +674,27 @@ let del=e.target.dataset.del;
 
 if(id){
 let a=events.find(x=>x.id===id);
+
 editing=id;
+
 fields.forEach(k=>$(k).value=a[k]||'');
+
 $('formtitle').textContent='Editar atividade';
 $('editor').scrollIntoView({behavior:'smooth'});
 }
 
 if(del&&confirm('Excluir esta atividade?')){
 let {error}=await db.from('atividades').delete().eq('id',del);
+
 if(error)msg(error.message);
 else await load();
 }
 };
 
 let {data,error}=await db.auth.getSession();
+
 if(error)msg(error.message);
+
 await session(data.session);
 </script>
 </html>
