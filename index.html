@@ -221,7 +221,9 @@ const cats=[
 'Período de práticas',
 'Semana de reposição',
 'Outras atividades',
-'Período do módulo'
+'Período do módulo',
+'Realizar orçamento de insumos',
+'Comprar insumos'
 ];
 
 const colors=[
@@ -236,7 +238,9 @@ const colors=[
 '#7c3aed',
 '#be123c',
 '#64748b',
-'#0f766e'
+'#0f766e',
+'#c2410c',
+'#15803d'
 ];
 
 const fields=[
@@ -250,7 +254,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({
 '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[c]));
 
-const color=e=>colors[cats.indexOf(e.categoria)]||colors[11];
+const color=e=>colors[cats.indexOf(e.categoria)]||colors[13];
 const fmt=d=>d.split('-').reverse().join('/');
 const msg=t=>$('msg').textContent=t||'';
 
@@ -352,7 +356,6 @@ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.
 
 function renderUpcoming(items){
 let today=localToday();
-
 let upcoming=items
 .filter(e=>e.data_fim>=today)
 .sort((a,b)=>a.data_inicio.localeCompare(b.data_inicio));
@@ -361,10 +364,8 @@ $('upcoming-list').innerHTML=upcoming.length?upcoming.map(e=>{
 let start=new Date(e.data_inicio+'T00:00:00');
 let now=new Date(today+'T00:00:00');
 let days=Math.round((start-now)/86400000);
-
 let status=days>0?`Começa em ${days} ${days===1?'dia':'dias'}`:
 (days===0?'Começa hoje':'Em andamento');
-
 return `<article class="upcoming-item">
 <div class="upcoming-top">
 <span class="upcoming-name"><i class="dot" style="background:${color(e)}"></i>${esc(e.titulo||e.categoria)}</span>
@@ -381,9 +382,7 @@ return `<article class="upcoming-item">
 function render(){
 $("daytip").hidden=true;
 let es=filtered();
-
 $('stats').textContent=`${es.length} ${es.length===1?'atividade':'atividades'}`;
-
 renderUpcoming(es);
 
 $('months').innerHTML=Array.from({length:12},(_,m)=>{
