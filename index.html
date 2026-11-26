@@ -223,7 +223,8 @@ const cats=[
 'Outras atividades',
 'Período do módulo',
 'Realizar orçamento de insumos',
-'Comprar insumos'
+'Comprar insumos',
+'Realizar comunicado'
 ];
 
 const colors=[
@@ -240,7 +241,8 @@ const colors=[
 '#64748b',
 '#0f766e',
 '#c2410c',
-'#15803d'
+'#15803d',
+'#0369a1'
 ];
 
 const fields=[
@@ -254,7 +256,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({
 '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[c]));
 
-const color=e=>colors[cats.indexOf(e.categoria)]||colors[13];
+const color=e=>colors[cats.indexOf(e.categoria)]||colors[14];
 const fmt=d=>d.split('-').reverse().join('/');
 const msg=t=>$('msg').textContent=t||'';
 
